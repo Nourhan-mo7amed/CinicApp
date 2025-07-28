@@ -1,10 +1,20 @@
 import 'package:cinic_app/screens/dashbord.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'Forget_Page.dart';
 import 'signup.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  bool isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +22,6 @@ class LoginScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // الدوائر الزخرفية
           Positioned(
             top: -100,
             right: -100,
@@ -20,11 +29,12 @@ class LoginScreen extends StatelessWidget {
               width: 270,
               height: 270,
               decoration: BoxDecoration(
-                color: Color(0xff285DD8).withOpacity(0.2),
+                color: const Color(0xff285DD8).withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
             ),
           ),
+          // الدائرة الغامقة فوق الفاتحة
           Positioned(
             top: -80,
             right: -80,
@@ -38,7 +48,18 @@ class LoginScreen extends StatelessWidget {
             ),
           ),
 
-          // محتوى الشاشة داخل Container رمادي
+          Positioned(
+            top: 30, // ممكن تزودي أو تقللي حسب المسافة اللي تحبيها
+            left: 0,
+            right: 170,
+            child: Center(
+              child: Image.asset(
+                'assets/icons_images/tabibak2.png',
+                height: 110,
+              ),
+            ),
+          ),
+
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -49,121 +70,79 @@ class LoginScreen extends StatelessWidget {
                 color: Color(0xFFEDEDED),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
               ),
-              child: ListView(
-                children: [
-                  const Text(
-                    "Welcome Back!",
-                    style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.left,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "Please login your registration to get started",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.left,
-                  ),
-                  const SizedBox(height: 30),
-
-                  const Text(
-                    'Email',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Enter your email",
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 15,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 30),
+                    const Text(
+                      "Welcome Back!",
+                      style: TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  const Text(
-                    'Password',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      hintText: "Enter your password",
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 15,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
-                      ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      "Login to your account",
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => Forget_Page(),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        "Forgot Password?",
-                        style: TextStyle(
-                          color: Color(0xff285DD8),
-                          fontWeight: FontWeight.w600,
+                    const SizedBox(height: 30),
+                    _buildTextField("Email", controller: emailController),
+                    const SizedBox(height: 15),
+                    _buildTextField(
+                      "Password",
+                      controller: passwordController,
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ForgetPasswordScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          "Forgot Password?",
+                          style: TextStyle(color: Colors.grey),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xff285DD8),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MedicalDashboard(),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : _login,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xff285DD8),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                        );
-                      },
-                      child: const Text(
-                        "Login",
-                        style: TextStyle(fontSize: 18, color: Colors.white),
+                        ),
+                        child: isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                "Login",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Center(
-                    child: TextButton(
+                    const SizedBox(height: 20),
+                    TextButton(
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => SignUp()),
+                          MaterialPageRoute(builder: (_) => const SignUp()),
                         );
                       },
                       child: const Text.rich(
@@ -172,7 +151,7 @@ class LoginScreen extends StatelessWidget {
                           style: TextStyle(color: Colors.black),
                           children: [
                             TextSpan(
-                              text: "Sign Up",
+                              text: "Sign up",
                               style: TextStyle(
                                 color: Color(0xff285DD8),
                                 fontWeight: FontWeight.bold,
@@ -182,13 +161,72 @@ class LoginScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildTextField(
+    String hintText, {
+    bool obscureText = false,
+    required TextEditingController controller,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      decoration: InputDecoration(
+        hintText: hintText,
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 15,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _login() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      _showSnackBar("تم تسجيل الدخول بنجاح ✅");
+
+      // بعد الدخول، انتقلي إلى الداشبورد
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MedicalDashboard()),
+      );
+    } on FirebaseAuthException catch (e) {
+      _showSnackBar(e.message ?? "فشل في تسجيل الدخول");
+    } catch (e) {
+      _showSnackBar("حدث خطأ غير متوقع");
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }

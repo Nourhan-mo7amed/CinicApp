@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class SignUp extends StatelessWidget {
+class SignUp extends StatefulWidget {
   const SignUp({super.key});
+
+  @override
+  State<SignUp> createState() => _SignUpState();
+}
+
+class _SignUpState extends State<SignUp> {
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
+
+  bool isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +31,7 @@ class SignUp extends StatelessWidget {
               width: 270,
               height: 270,
               decoration: BoxDecoration(
-                color: Color(0xff285DD8).withOpacity(0.2),
+                color: const Color(0xff285DD8).withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
             ),
@@ -29,9 +43,21 @@ class SignUp extends StatelessWidget {
             child: Container(
               width: 230,
               height: 230,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Color(0xff285DD8),
                 shape: BoxShape.circle,
+              ),
+            ),
+          ),
+
+          Positioned(
+            top: 30, // ممكن تزودي أو تقللي حسب المسافة اللي تحبيها
+            left: 0,
+            right: 170,
+            child: Center(
+              child: Image.asset(
+                'assets/icons_images/tabibak2.png',
+                height: 110,
               ),
             ),
           ),
@@ -73,36 +99,59 @@ class SignUp extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 30),
-                    _buildTextField("Enter your full name"),
+                    _buildTextField(
+                      "Enter your full name",
+                      controller: nameController,
+                    ),
                     const SizedBox(height: 15),
-                    _buildTextField("Enter your email"),
+                    _buildTextField(
+                      "Enter your email",
+                      controller: emailController,
+                    ),
                     const SizedBox(height: 15),
-                    _buildTextField("Enter your password", obscureText: true),
+                    _buildTextField(
+                      "Enter your password",
+                      controller: passwordController,
+                      obscureText: true,
+                    ),
                     const SizedBox(height: 15),
-                    _buildTextField("Confirm your password", obscureText: true),
+                    _buildTextField(
+                      "Confirm your password",
+                      controller: confirmPasswordController,
+                      obscureText: true,
+                    ),
                     const SizedBox(height: 30),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xff285DD8),
+                          backgroundColor: const Color(0xff285DD8),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 15),
                         ),
-                        onPressed: () {},
-                        child: const Text(
-                          "Sign Up",
-                          style: TextStyle(fontSize: 18, color: Colors.white),
-                        ),
+                        onPressed: isLoading ? null : _signUp,
+                        child: isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                "Sign Up",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 20),
                     Center(
                       child: TextButton(
                         onPressed: () {
-                          // الانتقال لـ Sign In
+                          Navigator.pop(
+                            context,
+                          ); // للرجوع إلى صفحة تسجيل الدخول
                         },
                         child: const Text.rich(
                           TextSpan(
@@ -131,8 +180,13 @@ class SignUp extends StatelessWidget {
     );
   }
 
-  Widget _buildTextField(String hintText, {bool obscureText = false}) {
+  Widget _buildTextField(
+    String hintText, {
+    bool obscureText = false,
+    required TextEditingController controller,
+  }) {
     return TextField(
+      controller: controller,
       obscureText: obscureText,
       decoration: InputDecoration(
         hintText: hintText,
@@ -148,5 +202,40 @@ class SignUp extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _signUp() async {
+    if (passwordController.text != confirmPasswordController.text) {
+      _showSnackBar("كلمة المرور غير متطابقة");
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      _showSnackBar("تم إنشاء الحساب بنجاح 🎉");
+      Navigator.pop(context); // يرجعه لصفحة تسجيل الدخول
+    } on FirebaseAuthException catch (e) {
+      _showSnackBar(e.message ?? "حدث خطأ أثناء التسجيل");
+    } catch (e) {
+      _showSnackBar("حدث خطأ غير متوقع");
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }

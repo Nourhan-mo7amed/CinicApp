@@ -34,6 +34,9 @@ dependencies:
   pinput: ^3.0.1
    
   fl_chart: ^0.64.0 
+  firebase_core: ^4.0.0
+  firebase_auth: ^6.0.0
+  fluttertoast: ^8.2.12
 
 
   # The following adds the Cupertino Icons font to your application.
