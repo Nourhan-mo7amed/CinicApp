@@ -44,7 +44,6 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
               ),
             ),
           ),
-          // الدائرة الغامقة فوق الفاتحة
           Positioned(
             top: -80,
             right: -80,
@@ -59,7 +58,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
           ),
 
           Positioned(
-            top: 30, // ممكن تزودي أو تقللي حسب المسافة اللي تحبيها
+            top: 30,
             left: 0,
             right: 170,
             child: Center(

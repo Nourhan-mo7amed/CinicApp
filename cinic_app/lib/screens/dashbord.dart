@@ -48,7 +48,6 @@ class _MedicalDashboardState extends State<MedicalDashboard> {
             painter: NavBarPainter(),
           ),
 
-          // BottomNavBar فوق الشكل المرسوم
           SizedBox(
             height: 80,
             child: BottomNavigationBar(
@@ -99,7 +98,6 @@ class _MedicalDashboardState extends State<MedicalDashboard> {
   }
 }
 
-// 🎨 CustomPainter to draw wave/curve under selected item
 class NavBarPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

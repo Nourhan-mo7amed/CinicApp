@@ -1,8 +1,8 @@
 import 'package:cinic_app/screens/dashbord.dart';
+import 'package:cinic_app/screens/user_role.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'Forget_Page.dart';
-import 'signup.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -142,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const SignUp()),
+                          MaterialPageRoute(builder: (_) => const UserRoleScreen()),
                         );
                       },
                       child: const Text.rich(

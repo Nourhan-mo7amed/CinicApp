@@ -1,9 +1,12 @@
+import 'package:cinic_app/screens/login1.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class SignUp extends StatefulWidget {
-  const SignUp({super.key});
+  final String role;
 
+  const SignUp({super.key, required this.role});
   @override
   State<SignUp> createState() => _SignUpState();
 }
@@ -36,7 +39,6 @@ class _SignUpState extends State<SignUp> {
               ),
             ),
           ),
-          // الدائرة الغامقة فوق الفاتحة
           Positioned(
             top: -80,
             right: -80,
@@ -51,7 +53,7 @@ class _SignUpState extends State<SignUp> {
           ),
 
           Positioned(
-            top: 30, // ممكن تزودي أو تقللي حسب المسافة اللي تحبيها
+            top: 30,
             left: 0,
             right: 170,
             child: Center(
@@ -149,9 +151,12 @@ class _SignUpState extends State<SignUp> {
                     Center(
                       child: TextButton(
                         onPressed: () {
-                          Navigator.pop(
+                          Navigator.push(
                             context,
-                          ); // للرجوع إلى صفحة تسجيل الدخول
+                            MaterialPageRoute(
+                              builder: (context) => LoginScreen(),
+                            ),
+                          );
                         },
                         child: const Text.rich(
                           TextSpan(
@@ -215,13 +220,24 @@ class _SignUpState extends State<SignUp> {
     });
 
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
+      final userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+            email: emailController.text.trim(),
+            password: passwordController.text.trim(),
+          );
+
+      // حفظ بيانات المستخدم مع نوعه
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({
+            'name': nameController.text.trim(),
+            'email': emailController.text.trim(),
+            'role': widget.role,
+          });
 
       _showSnackBar("تم إنشاء الحساب بنجاح 🎉");
-      Navigator.pop(context); // يرجعه لصفحة تسجيل الدخول
+      Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       _showSnackBar(e.message ?? "حدث خطأ أثناء التسجيل");
     } catch (e) {
