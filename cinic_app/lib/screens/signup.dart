@@ -234,7 +234,8 @@ class _SignUpState extends State<SignUp> {
             'name': nameController.text.trim(),
             'email': emailController.text.trim(),
             'role': widget.role,
-          });
+          })
+          .then((value) => print('done firebasestore'));
 
       _showSnackBar("تم إنشاء الحساب بنجاح 🎉");
       Navigator.pop(context);

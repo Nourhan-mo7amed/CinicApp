@@ -1,5 +1,7 @@
 import 'package:cinic_app/screens/dashbord.dart';
+import 'package:cinic_app/screens/patient_dashbord.dart';
 import 'package:cinic_app/screens/user_role.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'Forget_Page.dart';
@@ -142,7 +144,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const UserRoleScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const UserRoleScreen(),
+                          ),
                         );
                       },
                       child: const Text.rich(
@@ -201,18 +205,46 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
+      // تسجيل الدخول
+      final userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+            email: emailController.text.trim(),
+            password: passwordController.text.trim(),
+          );
+
+      final uid = userCredential.user!.uid;
+
+      // جلب بيانات المستخدم من Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      if (!userDoc.exists) {
+        _showSnackBar("المستخدم غير موجود في قاعدة البيانات!");
+        return;
+      }
+
+      final role = userDoc.data()?['role'];
 
       _showSnackBar("تم تسجيل الدخول بنجاح ✅");
 
-      // بعد الدخول، انتقلي إلى الداشبورد
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MedicalDashboard()),
-      );
+      // توجيه حسب الرول
+      if (role == "Doctor") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => MedicalDashboard()),
+        );
+      } else if (role == "Patient") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PatientDashboard(),
+          ), // غيّري دي حسب اسم شاشة المريض عندك
+        );
+      } else {
+        _showSnackBar("نوع المستخدم غير معروف!");
+      }
     } on FirebaseAuthException catch (e) {
       _showSnackBar(e.message ?? "فشل في تسجيل الدخول");
     } catch (e) {
