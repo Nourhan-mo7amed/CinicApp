@@ -1,4 +1,4 @@
-import 'package:cinic_app/screens/login1.dart';
+import 'package:cinic_app/auth/views/login1.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 

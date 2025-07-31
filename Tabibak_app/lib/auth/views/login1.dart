@@ -1,9 +1,12 @@
+import 'package:cinic_app/auth/views/user_role.dart';
+import 'package:cinic_app/auth/widgets/auth_container.dart';
+import 'package:cinic_app/auth/widgets/auth_header.dart';
+import 'package:cinic_app/auth/widgets/auth_text_field.dart';
 import 'package:cinic_app/screens/dashbord.dart';
 import 'package:cinic_app/screens/patient_dashbord.dart';
-import 'package:cinic_app/screens/user_role.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'Forget_Page.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -18,60 +21,20 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
 
+  bool isPasswordVisible = false;
+  bool isConfirmPasswordVisible = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 270,
-              height: 270,
-              decoration: BoxDecoration(
-                color: const Color(0xff285DD8).withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          // الدائرة الغامقة فوق الفاتحة
-          Positioned(
-            top: -80,
-            right: -80,
-            child: Container(
-              width: 230,
-              height: 230,
-              decoration: const BoxDecoration(
-                color: Color(0xff285DD8),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-
-          Positioned(
-            top: 30, // ممكن تزودي أو تقللي حسب المسافة اللي تحبيها
-            left: 0,
-            right: 170,
-            child: Center(
-              child: Image.asset(
-                'assets/icons_images/tabibak2.png',
-                height: 110,
-              ),
-            ),
-          ),
+          const AuthHeader(),
 
           Align(
             alignment: Alignment.bottomCenter,
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              width: double.infinity,
-              height: MediaQuery.of(context).size.height * 0.75,
-              decoration: const BoxDecoration(
-                color: Color(0xFFEDEDED),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
-              ),
+            child: AuthContainer(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
@@ -89,12 +52,23 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(fontSize: 16, color: Colors.grey),
                     ),
                     const SizedBox(height: 30),
-                    _buildTextField("Email", controller: emailController),
+                    AuthTextField(
+                      hintText: "Email",
+                      controller: emailController,
+                      prefixIcon: Icons.email_outlined,
+                    ),
                     const SizedBox(height: 15),
-                    _buildTextField(
-                      "Password",
+                    AuthTextField(
+                      hintText: "Password",
                       controller: passwordController,
-                      obscureText: true,
+                      prefixIcon: Icons.lock_outline,
+                      isConfirmPasswordField: true,
+                      isObscure: !isConfirmPasswordVisible,
+                      onToggleVisibility: () {
+                        setState(() {
+                          isConfirmPasswordVisible = !isConfirmPasswordVisible;
+                        });
+                      },
                     ),
                     const SizedBox(height: 10),
                     Align(
@@ -175,46 +149,17 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildTextField(
-    String hintText, {
-    bool obscureText = false,
-    required TextEditingController controller,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      decoration: InputDecoration(
-        hintText: hintText,
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 15,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: BorderSide.none,
-        ),
-      ),
-    );
-  }
-
   Future<void> _login() async {
-    setState(() {
-      isLoading = true;
-    });
+    setState(() => isLoading = true);
 
     try {
-      // تسجيل الدخول
       final userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
             email: emailController.text.trim(),
             password: passwordController.text.trim(),
           );
-
       final uid = userCredential.user!.uid;
 
-      // جلب بيانات المستخدم من Firestore
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
@@ -229,7 +174,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
       _showSnackBar("تم تسجيل الدخول بنجاح ✅");
 
-      // توجيه حسب الرول
       if (role == "Doctor") {
         Navigator.pushReplacement(
           context,
@@ -238,9 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } else if (role == "Patient") {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => PatientDashboard(),
-          ), // غيّري دي حسب اسم شاشة المريض عندك
+          MaterialPageRoute(builder: (_) => PatientDashboard()),
         );
       } else {
         _showSnackBar("نوع المستخدم غير معروف!");
@@ -251,9 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _showSnackBar("حدث خطأ غير متوقع");
     }
 
-    setState(() {
-      isLoading = false;
-    });
+    setState(() => isLoading = false);
   }
 
   void _showSnackBar(String message) {
