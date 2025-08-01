@@ -2,11 +2,11 @@ import 'package:cinic_app/auth/views/user_role.dart';
 import 'package:cinic_app/auth/widgets/auth_container.dart';
 import 'package:cinic_app/auth/widgets/auth_header.dart';
 import 'package:cinic_app/auth/widgets/auth_text_field.dart';
-import 'package:cinic_app/screens/dashbord.dart';
-import 'package:cinic_app/screens/patient_dashbord.dart';
+import 'package:cinic_app/patient%20dashbord/views/patient_dashbord.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../doctor dashbord/views/doctor_dashbord.dart';
 import 'Forget_Page.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -177,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (role == "Doctor") {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => MedicalDashboard()),
+          MaterialPageRoute(builder: (_) => DoctorDashboard()),
         );
       } else if (role == "Patient") {
         Navigator.pushReplacement(

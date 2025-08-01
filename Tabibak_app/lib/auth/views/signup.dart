@@ -19,6 +19,8 @@ class SignUp extends StatefulWidget {
 }
 
 class _SignUpState extends State<SignUp> {
+  final TextEditingController specialtyController = TextEditingController();
+
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -67,6 +69,15 @@ class _SignUpState extends State<SignUp> {
                   controller: emailController,
                   prefixIcon: Icons.email_outlined,
                 ),
+                if (widget.role.toLowerCase() == 'doctor') ...[
+                  const SizedBox(height: 15),
+                  AuthTextField(
+                    hintText: "Enter your specialty",
+                    controller: specialtyController,
+                    prefixIcon: Icons.local_hospital,
+                  ),
+                ],
+
                 const SizedBox(height: 15),
                 AuthTextField(
                   hintText: "Enter your password",
@@ -139,14 +150,26 @@ class _SignUpState extends State<SignUp> {
             password: passwordController.text.trim(),
           );
 
+      // بيانات المستخدم الأساسية
+      final userData = {
+        'name': nameController.text.trim(),
+        'email': emailController.text.trim(),
+        'role': widget.role,
+      };
+
+      // ✅ لو طبيب، نزود باقي التفاصيل
+      if (widget.role.toLowerCase() == 'doctor') {
+        userData['specialty'] = specialtyController.text.trim();
+        userData['fee'] = '150 جنيه'; // ممكن تخليه dynamic في المستقبل
+        userData['time'] = '10:00 - 4:00'; // ممكن تخليه dynamic كمان
+        userData['rating'] = "4.9"; // مبدأياً ثابت
+      }
+
+      // حفظ في Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
-          .set({
-            'name': nameController.text.trim(),
-            'email': emailController.text.trim(),
-            'role': widget.role,
-          });
+          .set(userData);
 
       _showSnackBar("تم إنشاء الحساب بنجاح 🎉");
       Navigator.pop(context);

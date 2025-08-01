@@ -19,6 +19,8 @@ class AuthButton extends StatelessWidget {
       width: double.infinity,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
+          
+          
           backgroundColor: const Color(0xff285DD8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
