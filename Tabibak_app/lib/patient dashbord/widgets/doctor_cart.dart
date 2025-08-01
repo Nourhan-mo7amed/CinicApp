@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class DoctorCard extends StatelessWidget {
@@ -6,7 +5,7 @@ class DoctorCard extends StatelessWidget {
   final String specialty;
   final String imageUrl;
   final VoidCallback onRequest;
-  final bool isBooked;
+  final String bookingStatus; // ← بدل bool
 
   const DoctorCard({
     super.key,
@@ -14,11 +13,25 @@ class DoctorCard extends StatelessWidget {
     required this.specialty,
     required this.imageUrl,
     required this.onRequest,
-    required this.isBooked,
+    required this.bookingStatus,
   });
 
   @override
   Widget build(BuildContext context) {
+    Color buttonColor;
+    String buttonText;
+
+    if (bookingStatus == 'accepted') {
+      buttonColor = Colors.green;
+      buttonText = "تم الحجز";
+    } else if (bookingStatus == 'pending') {
+      buttonColor = Colors.red;
+      buttonText = "إلغاء الحجز";
+    } else {
+      buttonColor = Colors.blue;
+      buttonText = "احجز";
+    }
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       margin: const EdgeInsets.symmetric(vertical: 10),
@@ -28,7 +41,9 @@ class DoctorCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 30,
-              backgroundImage: imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
+              backgroundImage: imageUrl.isNotEmpty
+                  ? NetworkImage(imageUrl)
+                  : null,
               child: imageUrl.isEmpty ? const Icon(Icons.person) : null,
             ),
             const SizedBox(width: 16),
@@ -43,11 +58,15 @@ class DoctorCard extends StatelessWidget {
               ),
             ),
             ElevatedButton(
-              onPressed: onRequest,
+              onPressed: bookingStatus == 'accepted'
+                  ? () {}
+                  : onRequest, // ممنوع الحذف لو تم الحجز
               style: ElevatedButton.styleFrom(
-                backgroundColor: isBooked ? Colors.red : Colors.blue,
+                backgroundColor: buttonColor,
+                foregroundColor: Colors.white, // ← لون النص داخل الزر
               ),
-              child: Text(isBooked ? "إلغاء الحجز" : "احجز"),
+
+              child: Text(buttonText),
             ),
           ],
         ),

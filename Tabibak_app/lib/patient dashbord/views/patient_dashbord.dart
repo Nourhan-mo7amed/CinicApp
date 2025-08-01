@@ -14,11 +14,11 @@ class PatientDashboard extends StatefulWidget {
 class _PatientDashboardState extends State<PatientDashboard> {
   final currentUser = FirebaseAuth.instance.currentUser;
 
-  Future<void> toggleBooking(String doctorId, bool alreadyBooked) async {
+  Future<void> toggleBooking(String doctorId, bool isPending) async {
     final requestRef = FirebaseFirestore.instance.collection('requests');
 
-    if (alreadyBooked) {
-      // احذف الحجز من requests
+    if (isPending) {
+      // احذف الحجز فقط لو كان في حالة انتظار
       final snapshot = await requestRef
           .where('patientId', isEqualTo: currentUser!.uid)
           .where('doctorId', isEqualTo: doctorId)
@@ -78,7 +78,14 @@ class _PatientDashboardState extends State<PatientDashboard> {
                 itemBuilder: (context, index) {
                   final doc = doctors[index];
                   final doctorId = doc.id;
-                  final alreadyBooked = bookedDoctorIds.contains(doctorId);
+                  String bookingStatus = '';
+                  for (var request in requestSnapshot.data!.docs) {
+                    if (request['doctorId'] == doctorId) {
+                      bookingStatus =
+                          request['status']; // 'pending' or 'accepted'
+                      break;
+                    }
+                  }
 
                   return DoctorCard(
                     name: doc['name'],
@@ -86,8 +93,9 @@ class _PatientDashboardState extends State<PatientDashboard> {
                     imageUrl: doc.data().toString().contains('imageUrl')
                         ? doc['imageUrl']
                         : 'https://cdn-icons-png.flaticon.com/512/147/147142.png',
-                    isBooked: alreadyBooked,
-                    onRequest: () => toggleBooking(doctorId, alreadyBooked),
+                    bookingStatus: bookingStatus,
+                    onRequest: () =>
+                        toggleBooking(doctorId, bookingStatus == 'pending'),
                   );
                 },
               );
