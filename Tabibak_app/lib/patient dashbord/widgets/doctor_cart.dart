@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 class DoctorCard extends StatelessWidget {
@@ -5,6 +6,7 @@ class DoctorCard extends StatelessWidget {
   final String specialty;
   final String imageUrl;
   final VoidCallback onRequest;
+  final bool isBooked;
 
   const DoctorCard({
     super.key,
@@ -12,6 +14,7 @@ class DoctorCard extends StatelessWidget {
     required this.specialty,
     required this.imageUrl,
     required this.onRequest,
+    required this.isBooked,
   });
 
   @override
@@ -41,8 +44,11 @@ class DoctorCard extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: onRequest,
-              child: const Text("احجز"),
-            )
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isBooked ? Colors.red : Colors.blue,
+              ),
+              child: Text(isBooked ? "إلغاء الحجز" : "احجز"),
+            ),
           ],
         ),
       ),

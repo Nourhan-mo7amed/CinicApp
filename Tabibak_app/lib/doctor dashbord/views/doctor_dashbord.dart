@@ -102,15 +102,37 @@ class DoctorDashboard extends StatelessWidget {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.check, color: Colors.green),
-                            onPressed: () => request.reference.update({
-                              'status': 'accepted',
-                            }),
+                            onPressed: () async {
+                              await request.reference.update({
+                                'status': 'accepted',
+                              });
+
+                              // تحديث حالة الحجز في ملف المريض
+                              await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(patientId)
+                                  .update({
+                                    'isBooked': true,
+                                    'bookedDoctorId': doctorId,
+                                  });
+                            },
                           ),
                           IconButton(
                             icon: const Icon(Icons.close, color: Colors.red),
-                            onPressed: () => request.reference.update({
-                              'status': 'rejected',
-                            }),
+                            onPressed: () async {
+                              await request.reference.update({
+                                'status': 'rejected',
+                              });
+
+                              // إزالة الحجز من ملف المريض
+                              await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(patientId)
+                                  .update({
+                                    'isBooked': false,
+                                    'bookedDoctorId': FieldValue.delete(),
+                                  });
+                            },
                           ),
                         ],
                       ),
