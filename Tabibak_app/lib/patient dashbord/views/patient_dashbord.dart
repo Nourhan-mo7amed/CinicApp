@@ -2,6 +2,7 @@
 
 import 'package:cinic_app/auth/views/login1.dart';
 import 'package:cinic_app/patient%20dashbord/views/doctor_profile_screen.dart';
+import 'package:cinic_app/patient%20dashbord/views/p.dart';
 import 'package:cinic_app/patient%20dashbord/widgets/doctor_cart.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -17,6 +18,9 @@ class PatientDashboard extends StatefulWidget {
 class _PatientDashboardState extends State<PatientDashboard> {
   final currentUser = FirebaseAuth.instance.currentUser;
   int _selectedIndex = 0;
+
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   Future<void> toggleBooking(String doctorId, bool isPending) async {
     try {
@@ -60,7 +64,7 @@ class _PatientDashboardState extends State<PatientDashboard> {
           _buildHomeTab(),
           _buildBookingsTab(),
           const Center(child: Text('المفضلة')),
-          const Center(child: Text('الملف الشخصي')),
+          PatientProfileScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -114,8 +118,15 @@ class _PatientDashboardState extends State<PatientDashboard> {
               if (!doctorSnapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
-
-              final doctors = doctorSnapshot.data!.docs;
+              final doctors = doctorSnapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final name = (data['name'] ?? '').toString().toLowerCase();
+                final specialty = (data['specialty'] ?? '')
+                    .toString()
+                    .toLowerCase();
+                return name.contains(_searchQuery) ||
+                    specialty.contains(_searchQuery);
+              }).toList();
 
               if (doctors.isEmpty) {
                 return const Center(child: Text("لا يوجد أطباء حاليًا"));
@@ -160,32 +171,33 @@ class _PatientDashboardState extends State<PatientDashboard> {
 
                           final data = doc.data() as Map<String, dynamic>;
 
-         return GestureDetector(
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DoctorProfileScreen(
-          doctorData: data,
-        ),
-      ),
-    );
-  },
-  child: DoctorCard(
-    name: data['name'] ?? 'غير معروف',
-    specialty: data['specialty'] ?? 'غير محدد',
-    imageUrl: data.containsKey('imageUrl')
-        ? data['imageUrl']
-        : 'https://cdn-icons-png.flaticon.com/512/147/147142.png',
-    bookingStatus: bookingStatus,
-    time: data['time'] ?? 'غير محدد',
-    fee: data['fee']?.toString() ?? 'غير محدد',
-    rating: data['rating']?.toString() ?? '0.0',
-    onRequest: () =>
-        toggleBooking(doctorId, bookingStatus == 'pending'),
-  ),
-);
-    },
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      DoctorProfileScreen(doctorData: data),
+                                ),
+                              );
+                            },
+                            child: DoctorCard(
+                              name: data['name'] ?? 'غير معروف',
+                              specialty: data['specialty'] ?? 'غير محدد',
+                              imageUrl: data.containsKey('imageUrl')
+                                  ? data['imageUrl']
+                                  : 'https://cdn-icons-png.flaticon.com/512/147/147142.png',
+                              bookingStatus: bookingStatus,
+                              time: data['time'] ?? 'غير محدد',
+                              fee: data['fee']?.toString() ?? 'غير محدد',
+                              rating: data['rating']?.toString() ?? '0.0',
+                              onRequest: () => toggleBooking(
+                                doctorId,
+                                bookingStatus == 'pending',
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -268,36 +280,67 @@ class _PatientDashboardState extends State<PatientDashboard> {
   Widget _buildHeader() {
     return Row(
       children: [
-        const CircleAvatar(
-          radius: 26,
-          backgroundImage: AssetImage('assets/imeges/doctor1.png'),
+        StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser!.uid)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const CircleAvatar(
+                radius: 26,
+                backgroundColor: Colors.grey,
+                child: Icon(Icons.person, color: Colors.white),
+              );
+            }
+
+            final userData = snapshot.data!.data() as Map<String, dynamic>?;
+            final imageUrl = userData?['imageUrl'] as String?;
+
+            return CircleAvatar(
+              radius: 26,
+              backgroundImage: imageUrl != null && imageUrl.isNotEmpty
+                  ? NetworkImage(imageUrl)
+                  : const AssetImage('assets/images/default_avatar.png')
+                        as ImageProvider,
+            );
+          },
         ),
+
         const SizedBox(width: 12),
         StreamBuilder<DocumentSnapshot>(
-  stream: FirebaseFirestore.instance
-      .collection('users')
-      .doc(currentUser!.uid)
-      .snapshots(),
-  builder: (context, snapshot) {
-    if (!snapshot.hasData) {
-      return const CircularProgressIndicator();
-    }
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser!.uid)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const CircularProgressIndicator();
+            }
 
-    final userData = snapshot.data!.data() as Map<String, dynamic>?;
-    final userName = userData?['name'] ?? 'مستخدم';
+            final userData = snapshot.data!.data() as Map<String, dynamic>?;
+            final fullName = userData?['name'] ?? 'مستخدم';
+            final firstName = fullName.toString().split(' ').first;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Hello", style: TextStyle(fontSize: 16, color: Colors.grey)),
-        Text(
-          "$userName !",
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Hello",
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+                Text(
+                  "$firstName!",
+
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
-      ],
-    );
-  },
-),
 
         const Spacer(),
         const Icon(
@@ -322,10 +365,16 @@ class _PatientDashboardState extends State<PatientDashboard> {
 
   Widget _buildSearchBar() {
     return TextField(
+      controller: _searchController,
+      onChanged: (value) {
+        setState(() {
+          _searchQuery = value.toLowerCase();
+        });
+      },
       decoration: InputDecoration(
-        hintText: "Search",
+        hintText: "... ابحث عن طبيب",
+        hintStyle: const TextStyle(color: Colors.grey),
         prefixIcon: const Icon(Icons.search),
-        suffixIcon: const Icon(Icons.tune),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(vertical: 0),
