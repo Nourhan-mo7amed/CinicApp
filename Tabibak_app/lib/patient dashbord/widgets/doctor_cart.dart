@@ -5,7 +5,10 @@ class DoctorCard extends StatelessWidget {
   final String specialty;
   final String imageUrl;
   final VoidCallback onRequest;
-  final String bookingStatus; // ← بدل bool
+  final String bookingStatus;
+  final String time; // ← إضافي للتوقيت
+  final String fee; // ← إضافي للسعر
+  final String rating; // ← إضافي للتقييم
 
   const DoctorCard({
     super.key,
@@ -14,6 +17,9 @@ class DoctorCard extends StatelessWidget {
     required this.imageUrl,
     required this.onRequest,
     required this.bookingStatus,
+    required this.time,
+    required this.fee,
+    required this.rating,
   });
 
   @override
@@ -32,44 +38,88 @@ class DoctorCard extends StatelessWidget {
       buttonText = "احجز";
     }
 
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundImage: imageUrl.isNotEmpty
-                  ? NetworkImage(imageUrl)
-                  : null,
-              child: imageUrl.isEmpty ? const Icon(Icons.person) : null,
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          )
+        ],
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              imageUrl,
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 60),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(specialty,
+                    style: const TextStyle(
+                        fontStyle: FontStyle.italic, color: Colors.grey)),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(time, style: const TextStyle(fontSize: 13)),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text("Fee: ",
+                        style: TextStyle(fontSize: 13, color: Colors.grey)),
+                    Text(fee, style: const TextStyle(fontSize: 13)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Column(
+            children: [
+              Row(
                 children: [
-                  Text(name, style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 4),
-                  Text(specialty, style: Theme.of(context).textTheme.bodySmall),
+                  const Icon(Icons.star, color: Colors.amber, size: 18),
+                  const SizedBox(width: 2),
+                  Text(rating,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w500, fontSize: 14)),
                 ],
               ),
-            ),
-            ElevatedButton(
-              onPressed: bookingStatus == 'accepted'
-                  ? () {}
-                  : onRequest, // ممنوع الحذف لو تم الحجز
-              style: ElevatedButton.styleFrom(
-                backgroundColor: buttonColor,
-                foregroundColor: Colors.white, // ← لون النص داخل الزر
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed:
+                    bookingStatus == 'accepted' ? null : onRequest, // disable if accepted
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: buttonColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(buttonText,
+                    style: const TextStyle(fontSize: 13, color: Colors.white)),
               ),
-
-              child: Text(buttonText),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
