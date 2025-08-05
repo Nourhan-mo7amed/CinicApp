@@ -1,4 +1,4 @@
-/* Updated UI enhancements for PatientDashboard */
+// patient_dashboard.dart
 
 import 'package:cinic_app/auth/views/login1.dart';
 import 'package:cinic_app/patient%20dashbord/views/doctor_profile_screen.dart';
@@ -21,34 +21,6 @@ class _PatientDashboardState extends State<PatientDashboard> {
 
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-
-  Future<void> toggleBooking(String doctorId, bool isPending) async {
-    try {
-      final requestRef = FirebaseFirestore.instance.collection('requests');
-
-      if (isPending) {
-        final snapshot = await requestRef
-            .where('patientId', isEqualTo: currentUser!.uid)
-            .where('doctorId', isEqualTo: doctorId)
-            .get();
-
-        for (var doc in snapshot.docs) {
-          await doc.reference.delete();
-        }
-      } else {
-        await requestRef.add({
-          'doctorId': doctorId,
-          'patientId': currentUser!.uid,
-          'status': 'pending',
-          'timestamp': FieldValue.serverTimestamp(),
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("حدث خطأ أثناء تنفيذ الحجز")),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,9 +76,10 @@ class _PatientDashboardState extends State<PatientDashboard> {
           if (!requestSnapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-
           final bookedDoctorIds = requestSnapshot.data!.docs
-              .map((doc) => doc['doctorId'] as String)
+              .map((doc) => doc['doctorId']?.toString())
+              .where((id) => id != null)
+              .cast<String>()
               .toList();
 
           return StreamBuilder<QuerySnapshot>(
@@ -118,6 +91,7 @@ class _PatientDashboardState extends State<PatientDashboard> {
               if (!doctorSnapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
+
               final doctors = doctorSnapshot.data!.docs.where((doc) {
                 final data = doc.data() as Map<String, dynamic>;
                 final name = (data['name'] ?? '').toString().toLowerCase();
@@ -160,42 +134,31 @@ class _PatientDashboardState extends State<PatientDashboard> {
                         itemCount: doctors.length,
                         itemBuilder: (context, index) {
                           final doc = doctors[index];
-                          final doctorId = doc.id;
-                          String bookingStatus = '';
-                          for (var request in requestSnapshot.data!.docs) {
-                            if (request['doctorId'] == doctorId) {
-                              bookingStatus = request['status'];
-                              break;
-                            }
-                          }
-
                           final data = doc.data() as Map<String, dynamic>;
 
-                          return GestureDetector(
+                          return DoctorCard(
+                            name: data['name'] ?? 'غير معروف',
+                            specialty: data['specialty'] ?? 'غير محدد',
+                            imageUrl: data.containsKey('imageUrl')
+                                ? data['imageUrl']
+                                : 'https://cdn-icons-png.flaticon.com/512/147/147142.png',
+                            time: data['time'] ?? 'غير محدد',
+                            fee: data['fee']?.toString() ?? 'غير محدد',
+                            rating: data['rating']?.toString() ?? '0.0',
                             onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) =>
-                                      DoctorProfileScreen(doctorData: data),
+                                  builder: (_) => DoctorProfileScreen(
+                                    doctorData: {
+                                      ...data,
+                                      'id': doc
+                                          .id, // هنا بنضيف ID الدكتور اللي بيتسجل في Firebase
+                                    },
+                                  ),
                                 ),
                               );
                             },
-                            child: DoctorCard(
-                              name: data['name'] ?? 'غير معروف',
-                              specialty: data['specialty'] ?? 'غير محدد',
-                              imageUrl: data.containsKey('imageUrl')
-                                  ? data['imageUrl']
-                                  : 'https://cdn-icons-png.flaticon.com/512/147/147142.png',
-                              bookingStatus: bookingStatus,
-                              time: data['time'] ?? 'غير محدد',
-                              fee: data['fee']?.toString() ?? 'غير محدد',
-                              rating: data['rating']?.toString() ?? '0.0',
-                              onRequest: () => toggleBooking(
-                                doctorId,
-                                bookingStatus == 'pending',
-                              ),
-                            ),
                           );
                         },
                       ),
@@ -258,7 +221,6 @@ class _PatientDashboardState extends State<PatientDashboard> {
                     imageUrl: data.containsKey('imageUrl')
                         ? data['imageUrl']
                         : 'https://cdn-icons-png.flaticon.com/512/147/147142.png',
-                    bookingStatus: 'accepted',
                     time: data.containsKey('time') ? data['time'] : 'غير محدد',
                     fee: data.containsKey('fee')
                         ? data['fee'].toString()
@@ -266,7 +228,14 @@ class _PatientDashboardState extends State<PatientDashboard> {
                     rating: data.containsKey('rating')
                         ? data['rating'].toString()
                         : '0.0',
-                    onRequest: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => DoctorProfileScreen(doctorData: data),
+                        ),
+                      );
+                    },
                   );
                 }).toList(),
               );
@@ -306,7 +275,6 @@ class _PatientDashboardState extends State<PatientDashboard> {
             );
           },
         ),
-
         const SizedBox(width: 12),
         StreamBuilder<DocumentSnapshot>(
           stream: FirebaseFirestore.instance
@@ -331,7 +299,6 @@ class _PatientDashboardState extends State<PatientDashboard> {
                 ),
                 Text(
                   "$firstName!",
-
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -341,23 +308,11 @@ class _PatientDashboardState extends State<PatientDashboard> {
             );
           },
         ),
-
         const Spacer(),
         const Icon(
           Icons.notifications_none_rounded,
           size: 28,
           color: Colors.blueAccent,
-        ),
-        IconButton(
-          icon: const Icon(Icons.logout, color: Colors.redAccent),
-          onPressed: () async {
-            await FirebaseAuth.instance.signOut();
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
-            );
-          },
         ),
       ],
     );

@@ -1,94 +1,126 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class DoctorProfileScreen extends StatelessWidget {
+class DoctorProfileScreen extends StatefulWidget {
   final Map<String, dynamic> doctorData;
 
   const DoctorProfileScreen({super.key, required this.doctorData});
 
   @override
+  State<DoctorProfileScreen> createState() => _DoctorProfileScreenState();
+}
+
+class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
+  bool isBooked = false;
+  String requestStatus = 'none'; // 'pending', 'accepted', 'none'
+  final String patientId = FirebaseAuth.instance.currentUser!.uid;
+
+  @override
+  void initState() {
+    super.initState();
+    checkBookingStatus();
+  }
+
+  Future<void> checkBookingStatus() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('requests')
+        .where('doctorId', isEqualTo: widget.doctorData['id'])
+        .where('patientId', isEqualTo: patientId)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isNotEmpty) {
+      final data = snapshot.docs.first.data();
+      setState(() {
+        isBooked = true;
+        requestStatus = data['status']; // 'pending' or 'accepted'
+      });
+    }
+  }
+
+  Future<void> handleBooking() async {
+    final docRef = FirebaseFirestore.instance.collection('requests').doc();
+
+    await docRef.set({
+      'doctorId': widget.doctorData['id'],
+      'patientId': patientId,
+      'status': 'pending',
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    setState(() {
+      isBooked = true;
+      requestStatus = 'pending';
+    });
+  }
+
+  Future<void> cancelBooking() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('requests')
+        .where('doctorId', isEqualTo: widget.doctorData['id'])
+        .where('patientId', isEqualTo: patientId)
+        .get();
+
+    for (var doc in snapshot.docs) {
+      await doc.reference.delete();
+    }
+
+    setState(() {
+      isBooked = false;
+      requestStatus = 'none';
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(doctorData['name'] ?? 'Doctor Profile'),
-        backgroundColor: Colors.teal,
+        title: Text(widget.doctorData['name'] ?? 'Doctor Profile'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: CircleAvatar(
-                radius: 60,
-                backgroundImage: NetworkImage(
-                  doctorData['imageUrl'] ??
-                      'https://cdn-icons-png.flaticon.com/512/147/147142.png',
-                ),
+            CircleAvatar(
+              radius: 50,
+              backgroundImage: NetworkImage(
+                widget.doctorData['imageUrl'] ?? '',
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Text(
-              doctorData['name'] ?? 'Unknown',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+              widget.doctorData['name'] ?? '',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            Text(widget.doctorData['specialty'] ?? ''),
+            const SizedBox(height: 16),
+            Text(
+              widget.doctorData['description'] ?? 'لا يوجد وصف متاح',
+              textAlign: TextAlign.center,
+            ),
+            const Spacer(),
+            if (requestStatus == 'accepted') ...[
+              ElevatedButton(
+                onPressed: null,
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                child: const Text('تم القبول'),
               ),
-            ),
-            Text(
-              doctorData['specialty'] ?? 'Specialty not available',
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'About the Doctor',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              doctorData['description'] ??
-                  'No description provided for this doctor.',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Reviews',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            ..._buildReviews(doctorData['reviews']),
+            ] else if (isBooked) ...[
+              ElevatedButton(
+                onPressed: cancelBooking,
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('إلغاء الحجز'),
+              ),
+            ] else ...[
+              ElevatedButton(
+                onPressed: handleBooking,
+                child: const Text('احجز مع الدكتور'),
+              ),
+            ],
           ],
         ),
       ),
     );
-  }
-
-  List<Widget> _buildReviews(List<dynamic>? reviews) {
-    if (reviews == null || reviews.isEmpty) {
-      return [const Text('No reviews available.')];
-    }
-
-    return reviews.map((review) {
-      return Card(
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        child: ListTile(
-          leading: const Icon(Icons.person),
-          title: Text(review['name'] ?? 'Anonymous'),
-          subtitle: Text(review['comment'] ?? ''),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              5,
-              (index) => Icon(
-                index < (review['rating'] ?? 0)
-                    ? Icons.star
-                    : Icons.star_border,
-                color: Colors.amber,
-                size: 20,
-              ),
-            ),
-          ),
-        ),
-      );
-    }).toList();
   }
 }
