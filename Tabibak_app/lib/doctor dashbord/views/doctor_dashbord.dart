@@ -2,6 +2,7 @@ import 'package:cinic_app/auth/views/login1.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'DoctorProfileScreen.dart';
 
@@ -15,30 +16,16 @@ class DoctorDashboard extends StatefulWidget {
 class _DoctorDashboardState extends State<DoctorDashboard> {
   final String doctorId = FirebaseAuth.instance.currentUser!.uid;
   int _selectedIndex = 0;
-  Map<String, dynamic>? doctorData; // متغير لتخزين بيانات الدكتور
 
   @override
   void initState() {
     super.initState();
-    fetchDoctorData(); // استدعاء الدالة عند بدء تحميل الشاشة
-  }
-
-  Future<void> fetchDoctorData() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-      setState(() {
-        doctorData = doc.data(); // تخزين البيانات
-      });
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
             .collection('users')
@@ -118,9 +105,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => DoctorProfileScreen(
-                                doctorData: doctorData ?? {},
-                              ),
+                              builder: (_) => const DoctorProfileScreen(),
                             ),
                           );
                         } else if (value == 'logout') {
@@ -309,33 +294,116 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                   .get(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const ListTile(
-                    title: Text("جاري تحميل بيانات المريض..."),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return const ListTile(
-                    title: Text("خطأ في تحميل بيانات المريض"),
+                  return const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: CircularProgressIndicator()),
                   );
                 }
 
                 if (!snapshot.hasData || snapshot.data?.data() == null) {
-                  // بدل ما تظل معلقة، هنا نخفي الـ ListTile أو تعرض رسالة أو تسجلها في الـ logs
-                  return const SizedBox(); // يخفي العنصر بدل ما يعرض نص ثابت
+                  return const SizedBox();
                 }
 
                 final patientData =
                     snapshot.data!.data() as Map<String, dynamic>;
                 final patientName = patientData['name'] ?? 'مريض غير معروف';
+                final patientImage = patientData['imageUrl'] ?? '';
+                final dateField =
+                    (request.data() as Map<String, dynamic>)['date'];
+                String bookingDate = 'غير محدد';
 
-                return Card(
-                  margin: const EdgeInsets.all(8),
+                if (dateField != null && dateField is Timestamp) {
+                  final localDate = dateField
+                      .toDate()
+                      .toLocal(); // تحويل للتوقيت المحلي
+                  bookingDate = DateFormat(
+                    'dd/MM/yyyy HH:mm',
+                  ).format(localDate);
+                }
+
+                return Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.6),
+                        blurRadius: 20,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
                   child: ListTile(
-                    title: Text(titleBuilder(patientName)),
-                    subtitle: Text(subtitle),
+                    contentPadding: const EdgeInsets.all(12),
+                    leading: CircleAvatar(
+                      radius: 28,
+                      backgroundImage: patientImage.isNotEmpty
+                          ? NetworkImage(patientImage)
+                          : const AssetImage('assets/images/default_avatar.png')
+                                as ImageProvider,
+                    ),
+                    title: Text(
+                      patientName,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        "موعد: $bookingDate",
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    ),
                     trailing: actionsBuilder != null
-                        ? actionsBuilder(request, patientId)
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                  size: 28,
+                                ),
+                                onPressed: () async {
+                                  await request.reference.update({
+                                    'status': 'accepted',
+                                  });
+                                  await FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(patientId)
+                                      .update({
+                                        'isBooked': true,
+                                        'bookedDoctorId': doctorId,
+                                      });
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.cancel,
+                                  color: Colors.red,
+                                  size: 28,
+                                ),
+                                onPressed: () async {
+                                  await request.reference.update({
+                                    'status': 'rejected',
+                                  });
+                                  await FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(patientId)
+                                      .update({
+                                        'isBooked': false,
+                                        'bookedDoctorId': FieldValue.delete(),
+                                      });
+                                },
+                              ),
+                            ],
+                          )
                         : null,
                   ),
                 );

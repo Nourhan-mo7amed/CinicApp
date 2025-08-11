@@ -31,7 +31,6 @@ class _PatientDashboardState extends State<PatientDashboard> {
     'العظام',
     'القلب',
     'المخ والأعصاب',
-    'المسالك البولية',
     'الأسنان',
     'الأطفال',
     'الطب النفسي',
@@ -40,8 +39,6 @@ class _PatientDashboardState extends State<PatientDashboard> {
     'الأورام',
     'التخدير',
     'الروماتيزم',
-    'الأمراض المعدية',
-    'الطب الطبيعي والتأهيل',
   ];
 
   Widget _buildServices() {

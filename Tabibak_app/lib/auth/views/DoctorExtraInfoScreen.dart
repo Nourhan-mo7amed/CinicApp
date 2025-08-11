@@ -46,7 +46,6 @@ class _DoctorExtraInfoScreenState extends State<DoctorExtraInfoScreen> {
     'العظام',
     'القلب',
     'المخ والأعصاب',
-    'المسالك البولية',
     'الأسنان',
     'الأطفال',
     'الطب النفسي',
@@ -55,8 +54,6 @@ class _DoctorExtraInfoScreenState extends State<DoctorExtraInfoScreen> {
     'الأورام',
     'التخدير',
     'الروماتيزم',
-    'الأمراض المعدية',
-    'الطب الطبيعي والتأهيل',
   ];
 
   Future<void> _pickImage() async {
