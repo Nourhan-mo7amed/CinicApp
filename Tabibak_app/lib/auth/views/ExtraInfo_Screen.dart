@@ -12,13 +12,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 
-class DoctorExtraInfoScreen extends StatefulWidget {
+class ExtraInfoScreen extends StatefulWidget {
   final String name;
   final String email;
   final String password;
   final String role;
 
-  const DoctorExtraInfoScreen({
+  const ExtraInfoScreen({
     super.key,
     required this.name,
     required this.email,
@@ -27,10 +27,13 @@ class DoctorExtraInfoScreen extends StatefulWidget {
   });
 
   @override
-  State<DoctorExtraInfoScreen> createState() => _DoctorExtraInfoScreenState();
+  State<ExtraInfoScreen> createState() => _ExtraInfoScreenState();
 }
 
-class _DoctorExtraInfoScreenState extends State<DoctorExtraInfoScreen> {
+class _ExtraInfoScreenState extends State<ExtraInfoScreen> {
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
+  final TextEditingController ageController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   String? selectedSpecialty;
   File? _profileImage;
@@ -78,19 +81,12 @@ class _DoctorExtraInfoScreenState extends State<DoctorExtraInfoScreen> {
       } else {
         return null;
       }
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
 
   Future<void> _completeSignUp() async {
-    if (selectedSpecialty == null || descriptionController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
-      );
-      return;
-    }
-
     setState(() => isLoading = true);
 
     try {
@@ -106,22 +102,37 @@ class _DoctorExtraInfoScreenState extends State<DoctorExtraInfoScreen> {
             password: widget.password,
           );
 
+      final data = {
+        'name': widget.name,
+        'email': widget.email,
+        'role': widget.role,
+        'imageUrl': imageUrl,
+        'phone': phoneController.text.trim(),
+        'address': addressController.text.trim(),
+        'age': ageController.text.trim(),
+      };
+
+      // لو هو دكتور، ضيف التخصص والوصف
+      if (widget.role == 'Doctor') {
+        data.addAll({
+          'specialty': selectedSpecialty ?? '',
+          'description': descriptionController.text.trim(),
+          'fee': '150 EGP',
+          'time': '10:00 - 4:00',
+          'rating': '4.9',
+        });
+      }
+
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
-          .set({
-            'name': widget.name,
-            'email': widget.email,
-            'role': widget.role,
-            'imageUrl': imageUrl,
-            'specialty': selectedSpecialty,
-            'description': descriptionController.text.trim(),
-            'fee': '150 EGP',
-            'time': '10:00 - 4:00',
-            'rating': '4.9',
-          });
+          .set(data);
 
-      Navigator.pushReplacementNamed(context, '/doctorDashboard');
+      if (widget.role == 'Doctor') {
+        Navigator.pushReplacementNamed(context, '/doctorDashboard');
+      } else {
+        Navigator.pushReplacementNamed(context, '/patientDashboard');
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("An error occurred during sign up")),
@@ -143,9 +154,14 @@ class _DoctorExtraInfoScreenState extends State<DoctorExtraInfoScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 30),
-                  const Text(
-                    "Doctor's Information",
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  Text(
+                    widget.role == 'Doctor'
+                        ? "Doctor's Information"
+                        : "Complete Your Information",
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   GestureDetector(
@@ -166,30 +182,50 @@ class _DoctorExtraInfoScreenState extends State<DoctorExtraInfoScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Choose Specialty',
-                      prefixIcon: Icon(Icons.local_hospital),
-                    ),
-                    value: selectedSpecialty,
-                    onChanged: (value) =>
-                        setState(() => selectedSpecialty = value),
-                    items: specialties
-                        .map(
-                          (specialty) => DropdownMenuItem(
-                            value: specialty,
-                            child: Text(specialty),
-                          ),
-                        )
-                        .toList(),
+                  AuthTextField(
+                    hintText: "Enter your phone number",
+                    controller: phoneController,
+                    prefixIcon: Icons.phone,
                   ),
                   const SizedBox(height: 15),
                   AuthTextField(
-                    hintText: "Enter a brief description",
-                    controller: descriptionController,
-                    prefixIcon: Icons.description,
+                    hintText: "Enter your address",
+                    controller: addressController,
+                    prefixIcon: Icons.home,
                   ),
+                  const SizedBox(height: 15),
+                  AuthTextField(
+                    hintText: "Enter your age",
+                    controller: ageController,
+                    prefixIcon: Icons.calendar_today,
+                  ),
+                  const SizedBox(height: 15),
+                  if (widget.role == 'Doctor') ...[
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Choose Specialty',
+                        prefixIcon: Icon(Icons.local_hospital),
+                      ),
+                      value: selectedSpecialty,
+                      onChanged: (value) =>
+                          setState(() => selectedSpecialty = value),
+                      items: specialties
+                          .map(
+                            (specialty) => DropdownMenuItem(
+                              value: specialty,
+                              child: Text(specialty),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                    const SizedBox(height: 15),
+                    AuthTextField(
+                      hintText: "Enter a brief description",
+                      controller: descriptionController,
+                      prefixIcon: Icons.description,
+                    ),
+                  ],
                   const SizedBox(height: 30),
                   AuthButton(
                     text: "Sign Up",

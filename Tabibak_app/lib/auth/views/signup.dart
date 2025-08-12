@@ -1,4 +1,4 @@
-import 'package:cinic_app/auth/views/DoctorExtraInfoScreen.dart';
+import 'package:cinic_app/auth/views/ExtraInfo_Screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cinic_app/auth/views/login1.dart';
 import 'package:cinic_app/auth/widgets/auth_header.dart';
@@ -43,6 +43,14 @@ class _SignUpState extends State<SignUp> {
   }
 
   void _goToExtraInfoScreen() {
+    if (nameController.text.trim().isEmpty ||
+        emailController.text.trim().isEmpty ||
+        passwordController.text.isEmpty ||
+        confirmPasswordController.text.isEmpty) {
+      _showSnackBar("من فضلك املأ جميع الحقول");
+      return;
+    }
+
     if (passwordController.text != confirmPasswordController.text) {
       _showSnackBar("كلمة المرور غير متطابقة");
       return;
@@ -51,7 +59,7 @@ class _SignUpState extends State<SignUp> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => DoctorExtraInfoScreen(
+        builder: (_) => ExtraInfoScreen(
           name: nameController.text.trim(),
           email: emailController.text.trim(),
           password: passwordController.text.trim(),
@@ -112,7 +120,8 @@ class _SignUpState extends State<SignUp> {
                     isConfirmPasswordField: true,
                     isObscure: !isConfirmPasswordVisible,
                     onToggleVisibility: () => setState(
-                      () => isConfirmPasswordVisible = !isConfirmPasswordVisible,
+                      () =>
+                          isConfirmPasswordVisible = !isConfirmPasswordVisible,
                     ),
                   ),
                   const SizedBox(height: 30),
